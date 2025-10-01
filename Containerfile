@@ -47,8 +47,8 @@ COPY entrypoint.sh /etc/container/entrypoint
 ARG MIRROR="mirrors.edge.kernel.org" 
 # RUN /bin/sed -i 's|dl-cdn.alpinelinux.org|${MIRROR}|g' /etc/apk/repositories
 # RUN cat /etc/apk/repositories
-RUN echo "https://${MIRROR}/alpine/edge/testing" >>  /etc/apk/repositories 
-RUN /sbin/apk add --no-cache \
+RUN echo "https://${MIRROR}/alpine/edge/testing" >>  /etc/apk/repositories \
+ && /sbin/apk add --no-cache \
     "${PACKAGE_NAME}=${PACKAGE_VERSION}_${PACKAGE_BUILD}-${PACKAGE_RELEASE}"
 
 
