@@ -6,7 +6,7 @@ FROM gautada/alpine:$ALPINE_VERSION as CONTAINER
 # │ VARIABLES          │
 # ╰――――――――――――――――――――╯
 ARG IMAGE_NAME="java"
-ARG PACKAGES="openjdk25"
+ARG IMAGE_PACKAGES="openjdk25"
 # ARG PACKAGE_VERSION="25.0.0"
 # ARG PACKAGE_BUILD="p36"
 # ARG PACKAGE_RELEASE="r0"
@@ -38,17 +38,19 @@ RUN /usr/sbin/usermod -l $USER alpine \
 # ╭――――――――――――――――――――╮
 # │ ENTRYPOINT         │
 # ╰――――――――――――――――――――╯
-COPY entrypoint.sh /etc/container/entrypoint
+# COPY entrypoint.sh /etc/container/entrypoint
 
 
 # ╭――――――――――――――――――――╮
 # │ APPLICATION        │
 # ╰――――――――――――――――――――╯
-ARG MIRROR="mirrors.edge.kernel.org" 
+# ARG MIRROR="mirrors.edge.kernel.org" 
 # RUN /bin/sed -i 's|dl-cdn.alpinelinux.org|${MIRROR}|g' /etc/apk/repositories
 # RUN cat /etc/apk/repositories
-RUN echo "https://${MIRROR}/alpine/edge/testing" >>  /etc/apk/repositories \
- && /sbin/apk add --no-cache "${PACKAGES}"
- # \ "${PACKAGE_NAME}=${PACKAGE_VERSION}_${PACKAGE_BUILD}-${PACKAGE_RELEASE}"
+# https://dl-cdn.alpinelinux.org/alpine/v3.19/community
+# RUN echo "https://${MIRROR}/alpine/edge/community" >>  /etc/apk/repositories 
+COPY java.s6 /etc/services.d/java/run
+RUN /sbin/apk add --no-cache ${IMAGE_PACKAGES}
+# \ "${PACKAGE_NAME}=${PACKAGE_VERSION}_${PACKAGE_BUILD}-${PACKAGE_RELEASE}"
 WORKDIR /home/$USER
 

@@ -1,3 +1,3 @@
 IMAGE_NAME=java
-PACKAGES="openjdk25 openjdk25-jre-headless maven"
+IMAGE_PACKAGES=openjdk25-jre-headless
 ALPINE_VERSION=3.23
