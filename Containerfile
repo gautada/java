@@ -1,56 +1,58 @@
-ARG ALPINE_VERSION=3.22
+ARG CONTAINER_VERSION=13.3
+FROM docker.io/gautada/debian:${CONTAINER_VERSION} AS container
 
-FROM gautada/alpine:$ALPINE_VERSION as CONTAINER
-
-# ╭――――――――――――――――――――╮
-# │ VARIABLES          │
-# ╰――――――――――――――――――――╯
-ARG IMAGE_NAME="java"
-ARG IMAGE_PACKAGES="openjdk25"
-# ARG PACKAGE_VERSION="25.0.0"
-# ARG PACKAGE_BUILD="p36"
-# ARG PACKAGE_RELEASE="r0"
+ARG IMAGE_NAME=java
 
 # ╭――――――――――――――――――――╮
 # │ METADATA           │
 # ╰――――――――――――――――――――╯
 LABEL org.opencontainers.image.title="${IMAGE_NAME}"
-LABEL org.opencontainers.image.description="A base container for java."
+LABEL org.opencontainers.image.description="A base container for Java (OpenJDK)."
 LABEL org.opencontainers.image.url="https://hub.docker.com/r/gautada/${IMAGE_NAME}"
 LABEL org.opencontainers.image.source="https://github.com/gautada/${IMAGE_NAME}"
-LABEL org.opencontainers.image.version="${PACKAGE_VERSION}"
 LABEL org.opencontainers.image.license="Upstream"
+
+# ╭――――――――――――――――――――╮
+# │ PACKAGES           │
+# ╰――――――――――――――――――――╯
+# Install OpenJDK 21 LTS (latest stable available in Debian 13).
+# DL3008 suppressed — OpenJDK apt package versioning does not align
+# with upstream release strings; suppression is the standard practice here.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends openjdk-21-jre-headless \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
 
 # ╭――――――――――――――――――――╮
 # │ USER               │
 # ╰――――――――――――――――――――╯
-ARG USER=duke # Original name of the java mascot
-RUN /usr/sbin/usermod -l $USER alpine \
-  && /usr/sbin/usermod -d /home/$USER -m $USER \
-  && /usr/sbin/groupmod -n $USER alpine \
-  && /bin/echo "$USER:$USER" | /usr/sbin/chpasswd
+# "Duke" is the original name of the Java mascot.
+ARG USER=duke
+RUN /usr/sbin/usermod -l $USER debian \
+ && /usr/sbin/usermod -d /home/$USER -m $USER \
+ && /usr/sbin/groupmod -n $USER debian \
+ && /bin/echo "$USER:$USER" | /usr/sbin/chpasswd
 
 # ╭――――――――――――――――――――╮
-# │ BACKUP             │
+# │ VERSION            │
 # ╰――――――――――――――――――――╯
-# COPY backup.sh /etc/container/backup
+# Provides /usr/bin/container-version — returns the installed OpenJDK version.
+COPY version.sh /usr/bin/container-version
+RUN chmod +x /usr/bin/container-version
+
+# ╭――――――――――――――――――――╮
+# │ HEALTH             │
+# ╰――――――――――――――――――――╯
+# java-running: verifies the Java runtime responds correctly to java -version.
+COPY java-running.sh /etc/container/health.d/java-running
+RUN chmod +x /etc/container/health.d/java-running
 
 # ╭――――――――――――――――――――╮
 # │ ENTRYPOINT         │
 # ╰――――――――――――――――――――╯
-# COPY entrypoint.sh /etc/container/entrypoint
-
-
-# ╭――――――――――――――――――――╮
-# │ APPLICATION        │
-# ╰――――――――――――――――――――╯
-# ARG MIRROR="mirrors.edge.kernel.org" 
-# RUN /bin/sed -i 's|dl-cdn.alpinelinux.org|${MIRROR}|g' /etc/apk/repositories
-# RUN cat /etc/apk/repositories
-# https://dl-cdn.alpinelinux.org/alpine/v3.19/community
-# RUN echo "https://${MIRROR}/alpine/edge/community" >>  /etc/apk/repositories 
+# s6 stub service: keeps the base container running.
+# Downstream containers replace this with their own service definition.
 COPY java.s6 /etc/services.d/java/run
-RUN /sbin/apk add --no-cache ${IMAGE_PACKAGES}
-# \ "${PACKAGE_NAME}=${PACKAGE_VERSION}_${PACKAGE_BUILD}-${PACKAGE_RELEASE}"
-WORKDIR /home/$USER
+RUN chmod +x /etc/services.d/java/run
 
+WORKDIR /home/${USER}
