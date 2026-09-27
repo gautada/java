@@ -1,5 +1,5 @@
-ARG CONTAINER_VERSION=13.3
-FROM docker.io/gautada/debian:${CONTAINER_VERSION} AS container
+ARG DEBIAN_VERSION=13.3
+FROM docker.io/gautada/debian:${DEBIAN_VERSION} AS container
 
 ARG IMAGE_NAME=java
 
