@@ -55,7 +55,7 @@ RUN chmod +x /etc/container/health.d/java-running
 # ╰――――――――――――――――――――╯
 # s6 stub service: keeps the base container running.
 # Downstream containers replace this with their own service definition.
-COPY java.s6 /etc/services.d/java/run
+COPY etc/services /etc/services.d/java/run
 RUN chmod +x /etc/services.d/java/run
 
 WORKDIR /home/${USER}
