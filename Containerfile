@@ -18,10 +18,38 @@ LABEL org.opencontainers.image.license="Upstream"
 # Install OpenJDK 21 LTS (latest stable available in Debian 13).
 # DL3008 suppressed — OpenJDK apt package versioning does not align
 # with upstream release strings; suppression is the standard practice here.
-RUN apt-get update \
- && apt-get install -y --no-install-recommends openjdk-21-jre-headless \
- && apt-get clean \
- && rm -rf /var/lib/apt/lists/*
+# RUN apt-get update \
+#  && apt-get install -y --no-install-recommends openjdk-21-jre-headless \
+#  && apt-get clean \
+# && rm -rf /var/lib/apt/lists/*
+# WORKDIR /opt
+# https://openjdk.org/projects/jdk/27/
+# https://download.java.net/java/GA/jdk27/55ce5470a6294008af0057ff4626d0e5/35/GPL/openjdk-27_linux-aarch64_bin.tar.gz 
+# https://download.java.net/java/GA/jdk27/55ce5470a6294008af0057ff4626d0e5/35/GPL/openjdk-27_linux-x64_bin.tar.gz
+# ADD https://download.java.net/java/early_access/jdk25/7/GPL/openjdk-25-ea+7_linux-aarch64_bin.tar.gz jdk-25.tgz
+# RUN /usr/bin/tar zxf jdk-25.tgz \
+#  && /usr/bin/mv jdk-25 jdk \
+#  && /usr/bin/rm jdk-25.tgz \
+#  && /usr/bin/ln -fsv /opt/jdk/bin/java /usr/bin/java
+
+
+WORKDIR /opt
+ARG TARGETARCH
+RUN case "${TARGETARCH}" in \
+      amd64) JAVA_ARCH="x64" ;; \
+      arm64) JAVA_ARCH="aarch64" ;; \
+      *) echo "Unsupported architecture: ${TARGETARCH}" >&2; exit 1 ;; \
+    esac \
+ && curl -fsSL \
+      "https://download.java.net/java/GA/jdk27/55ce5470a6294008af0057ff4626d0e5/35/GPL/openjdk-27_linux-${JAVA_ARCH}_bin.tar.gz" \
+      -o jdk.tgz \
+ && tar -xzf jdk.tgz \
+ && mv jdk-27 jdk \
+ && rm jdk.tgz \
+ && ln -fsv /opt/jdk/bin/java /usr/bin/java
+
+
+
 
 # ╭――――――――――――――――――――╮
 # │ USER               │
