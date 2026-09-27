@@ -1,5 +1,12 @@
 #!/bin/sh
 # s6 service stub: keeps the java base container running.
 # Downstream containers override this with their own service definition.
+
+set -e
 echo "Java base container running"
-exec tail -f /dev/null
+
+SLICE_USER=$(id -nu 1000)
+HOME="/home/${SLICE_USER}"
+export HOME
+
+ exec s6-setuidgid "${SLICE_USER}" /usr/bin/sleep infinity

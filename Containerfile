@@ -1,5 +1,5 @@
-ARG CONTAINER_VERSION=13.3
-FROM docker.io/gautada/debian:${CONTAINER_VERSION} AS container
+ARG DEBIAN_VERSION=13.3
+FROM docker.io/gautada/debian:${DEBIAN_VERSION} AS container
 
 ARG IMAGE_NAME=java
 
@@ -26,18 +26,21 @@ RUN apt-get update \
 # ╭――――――――――――――――――――╮
 # │ USER               │
 # ╰――――――――――――――――――――╯
-# "Duke" is the original name of the Java mascot.
+# Rename the base user to this container user.
+# Follows the same pattern as other gautada containers.
+ARG OLDUSER=debian
 ARG USER=duke
-RUN /usr/sbin/usermod -l $USER debian \
+RUN /usr/sbin/usermod -l $USER $OLDUSER \
  && /usr/sbin/usermod -d /home/$USER -m $USER \
- && /usr/sbin/groupmod -n $USER debian \
- && /bin/echo "$USER:$USER" | /usr/sbin/chpasswd
+ && /usr/sbin/groupmod -n $USER $OLDUSER \
+ && PASSWORD="$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 24)" \
+ && printf '%s:%s\n' "$USER" "$PASSWORD" | /usr/sbin/chpasswd
 
 # ╭――――――――――――――――――――╮
 # │ VERSION            │
 # ╰――――――――――――――――――――╯
 # Provides /usr/bin/container-version — returns the installed OpenJDK version.
-COPY version.sh /usr/bin/container-version
+COPY usr/bin/container-version /usr/bin/container-version
 RUN chmod +x /usr/bin/container-version
 
 # ╭――――――――――――――――――――╮
@@ -52,7 +55,7 @@ RUN chmod +x /etc/container/health.d/java-running
 # ╰――――――――――――――――――――╯
 # s6 stub service: keeps the base container running.
 # Downstream containers replace this with their own service definition.
-COPY java.s6 /etc/services.d/java/run
+COPY etc/services.d/java/run /etc/services.d/java/run
 RUN chmod +x /etc/services.d/java/run
 
 WORKDIR /home/${USER}
