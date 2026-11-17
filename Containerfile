@@ -1,4 +1,4 @@
-ARG DEBIAN_VERSION=13.3
+ARG DEBIAN_VERSION=13.7
 FROM docker.io/gautada/debian:${DEBIAN_VERSION} AS container
 
 ARG IMAGE_NAME=java
@@ -15,41 +15,26 @@ LABEL org.opencontainers.image.license="Upstream"
 # ╭――――――――――――――――――――╮
 # │ PACKAGES           │
 # ╰――――――――――――――――――――╯
-# Install OpenJDK 21 LTS (latest stable available in Debian 13).
-# DL3008 suppressed — OpenJDK apt package versioning does not align
-# with upstream release strings; suppression is the standard practice here.
-# RUN apt-get update \
-#  && apt-get install -y --no-install-recommends openjdk-21-jre-headless \
-#  && apt-get clean \
-# && rm -rf /var/lib/apt/lists/*
-# WORKDIR /opt
-# https://openjdk.org/projects/jdk/27/
-# https://download.java.net/java/GA/jdk27/55ce5470a6294008af0057ff4626d0e5/35/GPL/openjdk-27_linux-aarch64_bin.tar.gz 
-# https://download.java.net/java/GA/jdk27/55ce5470a6294008af0057ff4626d0e5/35/GPL/openjdk-27_linux-x64_bin.tar.gz
-# ADD https://download.java.net/java/early_access/jdk25/7/GPL/openjdk-25-ea+7_linux-aarch64_bin.tar.gz jdk-25.tgz
-# RUN /usr/bin/tar zxf jdk-25.tgz \
-#  && /usr/bin/mv jdk-25 jdk \
-#  && /usr/bin/rm jdk-25.tgz \
-#  && /usr/bin/ln -fsv /opt/jdk/bin/java /usr/bin/java
-
-
+# Install OpenJDK from the official publication point (jdk.java.net).
+# Multi-arch: downloads the correct tarball for amd64 or arm64.
+# https://jdk.java.net/27/
 WORKDIR /opt
 ARG TARGETARCH
+ARG JDK_VERSION=27.0.1.1
+ARG JDK_HASH=c3a705caf5044be8aa0b09e62be69b20
+ARG JDK_BUILD=4
 RUN case "${TARGETARCH}" in \
       amd64) JAVA_ARCH="x64" ;; \
       arm64) JAVA_ARCH="aarch64" ;; \
       *) echo "Unsupported architecture: ${TARGETARCH}" >&2; exit 1 ;; \
     esac \
  && curl -fsSL \
-      "https://download.java.net/java/GA/jdk27/55ce5470a6294008af0057ff4626d0e5/35/GPL/openjdk-27_linux-${JAVA_ARCH}_bin.tar.gz" \
+      "https://download.java.net/java/GA/jdk${JDK_VERSION}/${JDK_HASH}/${JDK_BUILD}/GPL/openjdk-${JDK_VERSION}_linux-${JAVA_ARCH}_bin.tar.gz" \
       -o jdk.tgz \
  && tar -xzf jdk.tgz \
- && mv jdk-27 jdk \
+ && mv jdk-* jdk \
  && rm jdk.tgz \
  && ln -fsv /opt/jdk/bin/java /usr/bin/java
-
-
-
 
 # ╭――――――――――――――――――――╮
 # │ USER               │
@@ -74,9 +59,12 @@ RUN chmod +x /usr/bin/container-version
 # ╭――――――――――――――――――――╮
 # │ HEALTH             │
 # ╰――――――――――――――――――――╯
-# java-running: verifies the Java runtime responds correctly to java -version.
-COPY java-running.sh /etc/container/health.d/java-running
-RUN chmod +x /etc/container/health.d/java-running
+# Health drop-ins into /etc/health.d/ (inherited from gautada/debian).
+# java-running: verifies the Java runtime responds correctly.
+# java-latest: verifies the installed JDK matches the latest GA from jdk.java.net.
+COPY java-running.sh /etc/health.d/java-running
+COPY java-latest.sh /etc/health.d/java-latest
+RUN chmod +x /etc/health.d/java-running /etc/health.d/java-latest
 
 # ╭――――――――――――――――――――╮
 # │ ENTRYPOINT         │
